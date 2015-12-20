@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.github.salomonbrys.kotson.*
 import khttp.post
 import java.io.FileNotFoundException
+import java.time.LocalDateTime
 
 public class Configuration(
         val apiKey: String,
@@ -29,19 +30,17 @@ fun loadConfig(fileName: String): Configuration? {
 
 public fun main(args: Array<String>) {
     var server = AppServer()
-    var taken = false
-    val config = loadConfig("keys.json") ?: return
+    var lastTaken: LocalDateTime? = null
+    val config = loadConfig(CONFIG_FILE) ?: return
 
     server.get("/buttonPress", {
-        taken = true
+        lastTaken = LocalDateTime.now()
         response.send("OK")
     })
 
     server.get("/haveITakenMyPills", {
-        if (!taken) {
+        if (lastTaken == null) {
             //Send reminder
-            println("sending reminder")
-
             val headers = mapOf(
                     "Access-Token" to config.apiKey
             )
@@ -61,12 +60,12 @@ public fun main(args: Array<String>) {
             response.send("No, you have not taken your pills. I sent you a reminder")
 
         } else {
-            response.send("yes, you have taken your pills")
+            response.send("yes, you have taken your pills today. You took them at $lastTaken")
         }
     })
 
     server.get("/reset", {
-        taken = false;
+        lastTaken = null
         response.send("OK")
     })
 
