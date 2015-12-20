@@ -5,14 +5,24 @@ import java.io.File
 import com.google.gson.Gson;
 import com.github.salomonbrys.kotson.*
 import khttp.post
+import java.io.FileNotFoundException
 
-public data class Configuration(
+public class Configuration(
         val apiKey: String,
         val deviceId: String
                     )
 
+private val CONFIG_FILE = "key.json"
+
 fun loadConfig(fileName: String): Configuration? {
-    val config = Gson().fromJson<Configuration>(File(fileName).readText())
+    val config: Configuration?
+
+    try {
+        config = Gson().fromJson<Configuration>(File(fileName).readText())
+    } catch (e: FileNotFoundException) {
+        println("config file not found. Please create a $CONFIG_FILE file with your api key and device ID")
+        config = null
+    }
 
     return config
 }
@@ -20,16 +30,14 @@ fun loadConfig(fileName: String): Configuration? {
 public fun main(args: Array<String>) {
     var server = AppServer()
     var taken = false
-    val config = loadConfig("key.json") ?: return
+    val config = loadConfig("keys.json") ?: return
 
     server.get("/buttonPress", {
-        println("Received button press")
         taken = true
         response.send("OK")
     })
 
     server.get("/haveITakenMyPills", {
-        println("taken is: $taken")
         if (!taken) {
             //Send reminder
             println("sending reminder")
